@@ -1,139 +1,101 @@
+# -*- coding: utf-8 -*-
+"""
+기술적 지표 시각화
+- MACD 차트
+- 이동평균선 차트
+- 가격 차트
+"""
+
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib import font_manager as fm
 import os
 
-# 한글 폰트 설정
-plt.rcParams['font.family'] = 'Malgun Gothic'
+print("=" * 50)
+print("📊 STEP 3: 기술적 지표 시각화")
+print("=" * 50)
 
-print("="*60)
-print("📊 신호 시각화!")
-print("="*60)
+# ===== Step 1: 한글 폰트 설정 =====
+print("\n🔧 한글 폰트 설정 중...")
 
-# 데이터 로드
-df = pd.read_csv('kospi_with_signals.csv', encoding='utf-8')
+try:
+    # Windows 한글 폰트
+    plt.rcParams['font.family'] = 'Malgun Gothic'
+    print("✅ Malgun Gothic 설정 완료")
+except:
+    print("⚠️ 한글 폰트 설정 실패, 기본 폰트 사용")
+
+plt.rcParams['axes.unicode_minus'] = False
+
+# ===== Step 2: 데이터 로드 =====
+print("\n📂 데이터 로드 중...")
+
+try:
+    df = pd.read_csv('kospi_with_signals.csv', encoding='utf-8')
+    print(f"✅ 로드 완료: {len(df)}개 행")
+except FileNotFoundError:
+    print("❌ kospi_with_signals.csv 파일을 찾을 수 없습니다!")
+    exit(1)
+
 df['날짜'] = pd.to_datetime(df['날짜'])
 
-print(f"\n✅ 로드 완료: {len(df)}개 행")
+# ===== Step 3: 종가를 숫자로 변환 =====
+if isinstance(df['종가'].iloc[0], str):
+    df['종가_숫자'] = df['종가'].str.replace(',', '').astype(float)
+else:
+    df['종가_숫자'] = df['종가'].astype(float)
 
-# 가격 정제 (쉼표 제거)
-df['종가_숫자'] = df['종가'].str.replace(',', '').astype(float)
+# ===== Step 4: MACD 차트 =====
+print("\n📊 MACD 차트 생성 중...")
 
-# 서브플롯 생성
-fig, axes = plt.subplots(3, 1, figsize=(14, 10))
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10), gridspec_kw={'height_ratios': [3, 1]})
 
-# ===== 1. 가격 + 이동평균선 =====
-print("\n1️⃣ 가격 + 이동평균선 그리기...")
-
-ax1 = axes[0]
+# 상단: 가격 + MA
 ax1.plot(df['날짜'], df['종가_숫자'], label='종가', linewidth=2, color='black')
-
-if 'MA5' in df.columns:
-    ax1.plot(df['날짜'], df['MA5'], label='MA5', alpha=0.7, color='orange')
-if 'MA20' in df.columns:
-    ax1.plot(df['날짜'], df['MA20'], label='MA20', alpha=0.7, color='green')
-if 'MA60' in df.columns:
-    ax1.plot(df['날짜'], df['MA60'], label='MA60', alpha=0.7, color='red')
-
-ax1.set_title('KOSPI 가격 & 이동평균선', fontsize=12, fontweight='bold')
-ax1.set_ylabel('가격')
-ax1.legend()
+ax1.plot(df['날짜'], df['MA5'], label='MA5', linewidth=1.5, linestyle='--', color='orange')
+ax1.plot(df['날짜'], df['MA20'], label='MA20', linewidth=1.5, linestyle='--', color='green')
+ax1.plot(df['날짜'], df['MA60'], label='MA60', linewidth=1.5, linestyle='--', color='red')
+ax1.set_ylabel('가격 (원)', fontsize=11)
+ax1.set_title('KOSPI 가격 & 이동평균선', fontsize=13, fontweight='bold')
+ax1.legend(loc='best')
 ax1.grid(True, alpha=0.3)
 
-# ===== 2. RSI =====
-print("2️⃣ RSI 그리기...")
-
-ax2 = axes[1]
-if 'RSI_14' in df.columns:
-    ax2.plot(df['날짜'], df['RSI_14'], label='RSI(14)', linewidth=2, color='blue')
-ax2.axhline(y=70, color='red', linestyle='--', label='과매수 (70)')
-ax2.axhline(y=30, color='green', linestyle='--', label='과매도 (30)')
-ax2.fill_between(df['날짜'], 30, 70, alpha=0.1, color='gray')
-ax2.set_title('RSI (상대강도지수)', fontsize=12, fontweight='bold')
-ax2.set_ylabel('RSI')
-ax2.set_ylim(0, 100)
-ax2.legend()
-ax2.grid(True, alpha=0.3)
-
-# ===== 3. MACD =====
-print("3️⃣ MACD 그리기...")
-
-ax3 = axes[2]
-if 'MACD' in df.columns:
-    ax3.plot(df['날짜'], df['MACD'], label='MACD', linewidth=2, color='blue')
-if '신호선' in df.columns:
-    ax3.plot(df['날짜'], df['신호선'], label='신호선', linewidth=2, color='red')
-
-ax3.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
+# 하단: MACD
+ax2.plot(df['날짜'], df['MACD'], label='MACD', linewidth=2, color='blue')
+ax2.plot(df['날짜'], df['신호선'], label='신호선', linewidth=2, color='red')
 
 # 히스토그램
-if 'MACD' in df.columns and '신호선' in df.columns:
-    histogram_colors = ['green' if x > 0 else 'red' for x in (df['MACD'] - df['신호선'])]
-    ax3.bar(df['날짜'], df['MACD'] - df['신호선'], label='히스토그램', alpha=0.3, color=histogram_colors)
+colors = ['green' if x > 0 else 'red' for x in (df['MACD'] - df['신호선'])]
+ax2.bar(df['날짜'], df['MACD'] - df['신호선'], label='히스토그램', color=colors, alpha=0.3)
 
-ax3.set_title('MACD (이동평균수렴확산지수)', fontsize=12, fontweight='bold')
-ax3.set_ylabel('MACD')
-ax3.set_xlabel('날짜')
-ax3.legend()
-ax3.grid(True, alpha=0.3)
+ax2.axhline(y=0, color='black', linestyle='-', linewidth=0.8)
+ax2.set_ylabel('MACD', fontsize=11)
+ax2.set_xlabel('날짜', fontsize=11)
+ax2.set_title('MACD 지표', fontsize=13, fontweight='bold')
+ax2.legend(loc='best')
+ax2.grid(True, alpha=0.3)
 
 plt.tight_layout()
 
 # 저장
-output_image = 'kospi_signals.png'
-plt.savefig(output_image, dpi=150, bbox_inches='tight')
-print(f"\n✅ 그래프 저장: {output_image}")
+output_file = 'kospi_signals.png'
+plt.savefig(output_file, dpi=150, bbox_inches='tight')
+print(f"✅ MACD 차트 저장: {output_file}")
 
-# 화면에 표시
-plt.show()
+# ===== Step 5: 통계 정보 출력 =====
+print("\n📊 기술적 지표 통계:")
+print(f"  MACD 평균: {df['MACD'].mean():.4f}")
+print(f"  MACD 범위: {df['MACD'].min():.4f} ~ {df['MACD'].max():.4f}")
+print(f"  신호선 평균: {df['신호선'].mean():.4f}")
+print(f"  RSI 평균: {df['RSI'].mean():.2f}")
 
-# ===== 최근 신호 분석 =====
-print("\n" + "="*60)
-print("📊 최근 신호 분석")
-print("="*60)
+# ===== Step 6: 신호 통계 =====
+print("\n🎯 신호 통계:")
+signal_counts = df['신호해석'].value_counts()
+for signal, count in signal_counts.items():
+    percentage = (count / len(df)) * 100
+    print(f"  {signal}: {count}일 ({percentage:.1f}%)")
 
-latest = df.iloc[-1]
-
-print(f"\n📈 현재 상태:")
-print(f"  날짜: {latest['날짜'].strftime('%Y-%m-%d')}")
-print(f"  종가: {latest['종가']}")
-
-if 'RSI_14' in df.columns:
-    print(f"\n🔍 RSI 신호:")
-    print(f"  값: {latest['RSI_14']:.2f}")
-    if latest['RSI_14'] > 70:
-        print(f"  → 🔴 과매수 (매도 신호)")
-    elif latest['RSI_14'] < 30:
-        print(f"  → 🟢 과매도 (매수 신호)")
-    else:
-        print(f"  → ⚪ 중립")
-
-if 'MACD' in df.columns and '신호선' in df.columns:
-    print(f"\n🔍 MACD 신호:")
-    print(f"  MACD: {latest['MACD']:.4f}")
-    print(f"  신호선: {latest['신호선']:.4f}")
-    if latest['MACD'] > latest['신호선']:
-        print(f"  → 🟢 상승신호 (매수)")
-    else:
-        print(f"  → 🔴 하락신호 (매도)")
-
-if 'MA5' in df.columns and 'MA20' in df.columns:
-    print(f"\n🔍 이동평균선 신호:")
-    print(f"  MA5: {latest['MA5']:.2f}")
-    print(f"  MA20: {latest['MA20']:.2f}")
-    if 'MA60' in df.columns:
-        print(f"  MA60: {latest['MA60']:.2f}")
-        if latest['MA5'] > latest['MA20'] > latest['MA60']:
-            print(f"  → 🟢 강한 상승추세")
-        elif latest['MA5'] > latest['MA20']:
-            print(f"  → 🟡 약한 상승추세")
-        elif latest['MA5'] < latest['MA20'] < latest['MA60']:
-            print(f"  → 🔴 강한 하락추세")
-        else:
-            print(f"  → ⚫ 약한 하락추세")
-    else:
-        if latest['MA5'] > latest['MA20']:
-            print(f"  → 🟢 상승추세")
-        else:
-            print(f"  → 🔴 하락추세")
-
-print("\n✅ 완료!")
+print("\n" + "=" * 50)
+print("✅ STEP 3 완료!")
+print("=" * 50)
