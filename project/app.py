@@ -31,8 +31,7 @@ def get_signal(row):
         signal_map = {-4: "🔴 강한 매도", -3: "🔴 강한 매도", -2: "🟠 약한 매도", 
                       -1: "🟠 약한 매도", 0: "🔵 중립", 1: "🟡 약한 매수", 
                       2: "🟡 약한 매수", 3: "🟢 강한 매수", 4: "🟢 강한 매수"}
-        signal_text = signal_map.get(int(score), "🔵 중립")
-        return signal_text, int(score)
+        return signal_map.get(int(score), "🔵 중립"), int(score)
     except:
         return "🔵 중립", 0
 
@@ -44,9 +43,14 @@ def get_explanation(row):
         ma20 = float(row['MA20'])
         ma60 = float(row['MA60'])
         
-        text = f"**{'✅' if macd > signal else '❌'} MACD {'>' if macd > signal else '<'} 신호선**\n"
+        text = f"**{'✅' if macd > signal else '❌'} MACD {'>' if macd > signal else '<'} 신호선**\n\n"
         if ma5 > ma20 > ma60:
-            text += "**✅ MA5 > MA20 > MA60**\n단기가 가장 높고 중기가 중간, 장기가 가장 낮음 → 강한 상승추세!"
+            text += "**✅ MA5 > MA20 > MA60**\n"
+            text += "• MA5(단기): 최근 5일 평균\n"
+            text += "• MA20(중기): 최근 20일 평균\n"
+            text += "• MA60(장기): 최근 60일 평균\n\n"
+            text += "단기가 가장 높고 중기가 중간, 장기가 가장 낮음\n"
+            text += "→ **강한 상승추세!**"
         elif ma5 > ma20:
             text += "**🟡 MA5 > MA20** → 약한 상승"
         else:
