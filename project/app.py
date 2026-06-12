@@ -128,7 +128,51 @@ with tab1:
     col5.metric("MA20", f"{float(selected_row['MA20']):,.0f}원")
     
     st.markdown("---")
+    
+    # MACD 설명 추가
+    st.markdown("### 📊 MACD 설명")
+    
+    macd_val = float(selected_row['MACD'])
+    signal_val = float(selected_row['신호선'])
+    
+    if macd_val > signal_val:
+        st.success("""
+        **MACD > 신호선 → 📈 매수신호 (상승)**
+        
+        빠른 추세가 느린 추세보다 크다
+        = 최근이 전보다 더 올라가는 중
+        = 계속 오를 가능성 높음
+        → **매수 신호!** ✅
+        """)
+    else:
+        st.error("""
+        **MACD < 신호선 → 📉 매도신호 (하락)**
+        
+        빠른 추세가 느린 추세보다 작다
+        = 최근이 전보다 더 내려가는 중
+        = 계속 내릴 가능성 높음
+        → **매도 신호!** ⚠️
+        """)
+    
+    st.info(f"""
+    **📌 MACD란?**
+    
+    두 개의 평균선의 차이를 이용한 기술적 분석 지표
+    
+    **계산**: 빠른평균(12일) - 느린평균(26일)
+    - 빠른평균: 최근 가격 변화에 민감
+    - 느린평균: 전체적인 추세를 반영
+    
+    **현재 값**:
+    - MACD: {macd_val:.4f}
+    - 신호선: {signal_val:.4f}
+    - 차이: {macd_val - signal_val:.4f}
+    """)
+    
+    st.markdown("---")
+    
     col1, col2, col3 = st.columns(3)
+    
     with col1:
         st.write(f"### {signal_text}\n점수: {score}/4\n신뢰도: {selected_row['신뢰도']}")
     with col2:
