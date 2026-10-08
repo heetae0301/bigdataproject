@@ -1,0 +1,32 @@
+# Render 배포 설정 (https://render.com "New +" -> "Blueprint" -> 이 저장소 선택).
+# DB는 Render 무료 웹 서비스에 디스크가 붙지 않으므로 Turso(원격 libSQL)를 쓴다는 전제.
+# DATABASE_URL / DATABASE_AUTH_TOKEN / JWT_SECRET / OPENAI_API_KEY는
+# Render 대시보드에서 직접 입력해야 한다 (sync: false = 값을 여기에 커밋하지 않음).
+services:
+  - type: web
+    name: adsp-quiz-api
+    runtime: node
+    plan: free
+    # Render는 pnpm-lock.yaml을 보고 pnpm을 미리 깔아준다. corepack enable은
+    # 빌드 이미지의 /usr/bin/pnpm이 읽기 전용이라 덮어쓰지 못하고 실패하므로 쓰지 않는다.
+    buildCommand: pnpm install --frozen-lockfile && pnpm build
+    startCommand: pnpm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_AUTH_TOKEN
+        sync: false
+      - key: GOOGLE_WEB_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      # Google 로그인 후 돌아갈 수 있는 Expo Go 개발 서버(ngrok 고정 도메인). 비밀 값 아님.
+      - key: EXPO_RETURN_HOSTS
+        value: grant-lecturer-subtly.ngrok-free.dev
